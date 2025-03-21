@@ -1,6 +1,6 @@
-import {z} from 'zod'
+import * as z from "zod";
 
 export const signInSchema = z.object({
-    username: z.string(),
-    password: z.string()
-})
+  identifier: z.string(), 
+  password: z.string()
+});

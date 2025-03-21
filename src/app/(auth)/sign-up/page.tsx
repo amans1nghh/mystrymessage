@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useState } from "react"
-import { useDebounceValue } from 'usehooks-ts'
+import { useDebounceCallback } from 'usehooks-ts'
 import { useRouter } from "next/navigation"
 import { signUpSchema } from "@/schemas/signUpSchema"
 import axios, { AxiosError } from 'axios'
@@ -21,7 +21,7 @@ const page = () => {
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const debouncedUsername = useDebounceValue(username, 300);
+  const debounced = useDebounceCallback(setUsername, 1000);
   const router = useRouter();
 
   //zod Implementation
@@ -36,13 +36,13 @@ const page = () => {
 
   useEffect(() => {
     const checkUsernameUniqueness = async () => {
-      if (debouncedUsername) {
+      if (username) {
         setIsCheckingUsername(true);  // to activate the loader while checking the username 
         setUsernameMessage('');  // to clear the previous message from the useState
 
         try {
           //api which will check for the unique username from the db based on the entered username
-          const response = await axios.get('/api/check-username-unique?username=${debouncedUsername}')
+          const response = await axios.get(`/api/check-username-unique?username=${username}`)
           setUsernameMessage(response.data.message)
         }
         catch (error) {
@@ -57,7 +57,7 @@ const page = () => {
       }
     }
     checkUsernameUniqueness()
-  }, [debouncedUsername])
+  }, [username])
 
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
@@ -70,7 +70,7 @@ const page = () => {
         description: response.data.message,
       });
 
-      router.replace('/verify/${username}')
+      router.replace(`/verify/${username}`)
       setIsSubmitting(false);
     }
     catch (error) {
@@ -84,7 +84,7 @@ const page = () => {
     }
   }
   return (
-    <div className="flex justify-center items-center min-h--screeen bg-gray-100">
+    <div className="flex justify-center items-center min-h-screeen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6"> Join Aman's Mystery Message</h1>
@@ -105,10 +105,14 @@ const page = () => {
                       {...field}
                       onChange={(e) => {
                         field.onChange(e)
-                        setUsername(e.target.value);
+                        debounced(e.target.value);
                       }}
                     />
                   </FormControl>
+                  {isCheckingUsername && <Loader2 className="animated-spin" />}
+                  <p className={`text-sm ${usernameMessage === "Username is Unique" ? 'text-green-500' : 'text-red-500'}`}>
+                    test {usernameMessage}
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,7 +150,7 @@ const page = () => {
               {
                 isSubmitting ? (
                   <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/> Please Wait!
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please Wait!
                   </>
                 ) : ('SignUp')
               }
@@ -157,7 +161,7 @@ const page = () => {
           <p>
             Already a member?{' '}
             <Link href="/sign-in" className="text-blue-600 hover:text-blue-800">
-            sign In
+              sign In
             </Link>
           </p>
         </div>
